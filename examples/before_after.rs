@@ -8,6 +8,11 @@ use tensor_types::{parameter_type, tensor_type};
 // uses tch::Tensors directly. The 'after' version shows how to use the tensor_types crate to avoid
 // the bugs in the before version. Can you find the bugs in the before version?
 
+// Note that in this example, we're naming our tensor types like `EncoderInput` and `DecoderInput`
+// for clarity in the example. In a real program, you would probably use names that describe the
+// types and are useful throughout your program, like `BatchTokens` for a 2d tensor of batched
+//  tokens, or `BatchSequenceEmbed` for a 3d tensor of a batched sequence of embedded tokens.
+
 // Example function that creates a tch::Tensor of the given shape. In a real program, it would
 // create the input tensor for your encoder. Here it just creates a tch::Tensor with random values.
 fn make_encoder_input_untyped(
@@ -89,17 +94,22 @@ fn my_transformer(
     // The transformer function returns a TransformerOutput. So the result must match the size
     // expected by the TransformerOutput. For this demo, we'll just drop the second dimension of the
     // tensor. Here, we illustrate a series of tch::Tensor operations performed without TensorTypes,
-    // then wrapped into the return value. `sum.tensor()` returns a reference to the wrapped tensor.
-    let narrowed = sum.tensor().narrow(2, 0, 1); // `narrowed` is type tch::Tensor
+    // then wrapped into the return value.
+    let cos = sum.tensor().cos(); // `cos` is type tch::Tensor
+    let narrowed = cos.narrow(2, 0, 1); // `narrowed` is type tch::Tensor
     let squeezed = narrowed.squeeze(); // `squeezed` is type tch::Tensor
 
-    // Wrap and return. The size will be checked for correctness by new().
+    // We've now dropped a dimension of the tensor. The tch::Tensor representation is flexible and
+    // also represents the differently-shaped tensor. But it provides no type safety which can make
+    // it hard to find where dimension changes occurred in the code. Instead, here, we'll wrap the
+    // tensor in a TransformerOutput, which we've defined above with a specific shape that will be
+    // checked by the new() function.
     let transformer_out = TransformerOutput::new(squeezed)?;
     Ok(transformer_out)
 }
 
-// The make_encoder_input_typed() function as before just creates a tch::Tensor with random values.
-// But this one accepts and returns typed tensors. The compiler will catch any errors in the
+// The make_encoder_input_typed() function, as before, just creates a tch::Tensor with random
+// values. But this one accepts and returns typed tensors. The compiler will catch any errors in the
 // argument order or return value shape.
 fn make_encoder_input_typed(
     batch_size: BatchSize,

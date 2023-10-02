@@ -3,6 +3,7 @@ use trybuild::TestCases;
 #[test]
 // These tests illustrate how the ParameterTypes and TensorTypes catch type mismatches at compile
 // time.
+#[cfg(not(feature = "use_serde"))]
 fn compilation_tests() {
     let t = TestCases::new();
     t.pass("tests/compilation_tests/01_basic.rs");

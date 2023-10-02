@@ -2,7 +2,7 @@
 mod tests {
     use anyhow::Result;
     use tch::Tensor;
-    use tensor_types::{parameter_type, tensor_type, TensorTypeError};
+    use tensor_types::{parameter_type, tensor_type};
 
     #[test]
     fn test_uninitialized_error() {
@@ -13,8 +13,8 @@ mod tests {
         // Error to call new() before set().
         let t = Tensor::randn([1, 2, 3], (tch::Kind::Float, tch::Device::Cpu));
         match MyTensor::new(t) {
-            Err(TensorTypeError::UninitializedError { type_name: _ }) => (),
-            _ => panic!("expected UninitializedError"),
+            Err(MyTensorError::Uninitialized { type_name: _ }) => (),
+            _ => panic!("expected Uninitialized"),
         };
     }
 
@@ -27,8 +27,8 @@ mod tests {
 
         // Error to call set() more than once.
         match MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)) {
-            Err(TensorTypeError::AlreadyInitializedError { type_name: _ }) => (),
-            _ => panic!("expected AlreadyInitializedError"),
+            Err(MyTensorError::AlreadyInitialized { type_name: _ }) => (),
+            _ => panic!("expected AlreadyInitialized"),
         };
     }
 
@@ -42,16 +42,16 @@ mod tests {
         // Error to call new() with wrong-sized tensor.
         let t = Tensor::randn([1, 2, 1], (tch::Kind::Float, tch::Device::Cpu));
         match MyTensor::new(t) {
-            Err(TensorTypeError::ShapeMismatchError {
+            Err(MyTensorError::ShapeMismatch {
                 type_name,
                 expected,
                 found,
             }) => {
                 if type_name != "MyTensor" || expected != vec![1, 2, 3] || found != vec![1, 2, 1] {
-                    panic!("expected ShapeMismatchError, but unexpected type_name ({}), found ({:?}) or expected ({:?})", type_name, found, expected)
+                    panic!("expected ShapeMismatch, but unexpected type_name ({}), found ({:?}) or expected ({:?})", type_name, found, expected)
                 }
             }
-            _ => panic!("expected ShapeMismatchError"),
+            _ => panic!("expected ShapeMismatch"),
         };
     }
 
@@ -169,16 +169,16 @@ mod tests {
         // But it's an error if the function given to apply changes the size of the wrapped tensor.
         // The tensor shape is fixed and is checked.
         match my_tensor.apply(|t| t.transpose(1, 2)) {
-            Err(TensorTypeError::ShapeMismatchError {
+            Err(MyTensorError::ShapeMismatch {
                 type_name,
                 expected,
                 found,
             }) => {
                 if type_name != "MyTensor" || expected != vec![1, 2, 3] || found != vec![1, 3, 2] {
-                    panic!("expected ShapeMismatchError, but unexpected type_name ({}), found ({:?}) or expected ({:?})", type_name, found, expected)
+                    panic!("expected ShapeMismatch, but unexpected type_name ({}), found ({:?}) or expected ({:?})", type_name, found, expected)
                 }
             }
-            _ => panic!("expected ShapeMismatchError"),
+            _ => panic!("expected ShapeMismatch"),
         };
     }
 }

@@ -122,7 +122,7 @@ operations are performed on them. For example:
 Now `my_function()` is clearly defined as returning a transposed result. It
 won't compile until the developer makes the code return a transposed shape in a
 `BatchModelSeq` type. And at runtime, `my_function` will return a
-`ShapeMismatchError` if the output tensor does not match the expected shape when
+`ShapeMismatch` if the output tensor does not match the expected shape when
 wrapped in `BatchModelSeq::new()` for return from the function.
 
 

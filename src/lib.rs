@@ -33,7 +33,7 @@
 //! # parameter_type!(SequenceLength, i64);
 //! # parameter_type!(ModelDimension, i64);
 //!
-//! # fn main() -> Result<(), tensor_types::TensorTypeError> {
+//! # fn main() -> Result<(), anyhow::Error> {
 //!     tensor_type!(MyTensor, [BatchSize, SequenceLength, ModelDimension]);
 //!     MyTensor::set(BatchSize(40), SequenceLength(100), ModelDimension(128))?;
 //! # Ok(())
@@ -50,7 +50,7 @@
 //! # parameter_type!(ModelDimension, i64);
 //! # tensor_type!(MyTensor, [BatchSize, SequenceLength, ModelDimension]);
 //!
-//! # fn main() -> Result<(), tensor_types::TensorTypeError> {
+//! # fn main() -> Result<(), anyhow::Error> {
 //!     # MyTensor::set(BatchSize(40), SequenceLength(100), ModelDimension(128))?;
 //!     //... tch::Tensor from somewhere.
 //!     let tensor = tch::Tensor::randn([40, 100, 128], (tch::Kind::Float, tch::Device::Cpu));
@@ -64,7 +64,6 @@
 //!     assert_eq!((*decoder_input).size(), &[40, 100, 128]);
 //! # Ok(())
 //! # }
-pub use tensor_types_errors::TensorTypeError;
 pub use tensor_types_proc::tensor_type;
 
-pub mod parameter_types;
+mod parameter_types;

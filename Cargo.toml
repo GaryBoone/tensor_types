@@ -6,18 +6,17 @@ description = "Create typed and sized-checked Rust wrappers for Tensors for more
 license = "MIT OR Apache-2.0"
 
 [workspace]
-members = [".", "tensor_types_proc", "tensor_types_errors"]
-default-members = [".", "tensor_types_proc", "tensor_types_errors"]
+members = [".", "tensor_types_proc"]
+default-members = [".", "tensor_types_proc"]
 
 [dependencies]
 anyhow = "1.0.75"
 serde = { version = "1.0.188", features = ["derive"], optional = true }
 serde_json = { version = "1.0.107", optional = true }
 tch = "0.13.0"
-tensor_types_proc = { path = "./tensor_types_proc" }
-tensor_types_errors = { path = "./tensor_types_errors" }
 thiserror = "1.0.48"
 trybuild = "1.0.85"
+tensor_types_proc = { version = "0.9.0", path = "tensor_types_proc" }
 
 [features]
 default = []

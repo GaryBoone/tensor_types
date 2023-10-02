@@ -11,4 +11,4 @@ proc-macro2 = "1.0.67"
 quote = "1.0.33"
 syn = "2.0.37"
 tch = "0.13.0"
-tensor_types_errors = { version = "0.9.0", path = "../tensor_types_errors" }
+thiserror = "1.0.49"

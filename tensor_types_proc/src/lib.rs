@@ -34,7 +34,7 @@ impl Parse for MacroInput {
 /// and checks that wrapped tensor meet the shape requirements. It also provides methods accessing
 /// the tensor and applying tensor operations to the tensor.
 ///
-/// To use the macro, 1) define the new type using the tesnor_type! macro. It takes the new type's
+/// To use the macro, 1) define the new type using the tensor_type! macro. It takes the new type's
 /// name followed by a list of types that provide the required dimensions of the tensor. 2) Call
 /// the new type's `set()` function with the actual values of the tensor's dimensions. 3) Call the
 /// constructor with a `tch::Tensor` that meets the required shape. 3) Use the new type's
@@ -43,7 +43,6 @@ impl Parse for MacroInput {
 /// # Example
 /// ```rust
 /// # use tensor_types_proc::tensor_type;
-/// # use tensor_types_errors::TensorTypeError;
 /// tensor_type!(MyTensor, [i64, i64]);
 ///
 /// MyTensor::set(2, 3).unwrap();
@@ -66,6 +65,8 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
 
     // We'll create a module named `<name>_module` to hold the static variables, isolating them.
     let module_name = Ident::new(&format!("{}_module", &name), proc_macro2::Span::call_site());
+
+    let error_type_name = Ident::new(&format!("{}Error", &name), proc_macro2::Span::call_site());
 
     let expanded = quote! {
 
@@ -123,12 +124,12 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # MyTensor::set(2, 3).unwrap();
             /// assert_eq!(MyTensor::get_dims(), Some(vec![2, 3]));
             /// ```
-            pub fn set(#( #vars: #types, )*) -> Result<(), tensor_types_errors::TensorTypeError>
+            pub fn set(#( #vars: #types, )*) -> Result<(), #error_type_name>
             where
                 #( #types: Into<i64>, )*
             {
                 if #module_name::INIT.is_completed() {
-                    return Err(tensor_types_errors::TensorTypeError::AlreadyInitializedError {
+                    return Err(#error_type_name::AlreadyInitialized {
                         type_name: stringify!(#name).to_string()
                     });
                 }
@@ -140,7 +141,7 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             }
 
             /// The new() function creates a new wrapper for a tensor. Its input is a tensor that
-            /// will be checked for the required shape. Returns an instanct of the new type defined
+            /// will be checked for the required shape. Returns an instance of the new type defined
             /// with the tensor_type!() macro. Returns an error if the dimensions have not been
             /// initialized with the shape requirements or if the tensor does not have the required
             /// shape.
@@ -156,16 +157,16 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// assert_eq!(wrapper.tensor().size(), &[2, 3]);
             /// assert_eq!((*wrapper).size(), &[2, 3]);
             /// ```
-            pub fn new(tensor: tch::Tensor) -> Result<Self, tensor_types_errors::TensorTypeError> {
+            pub fn new(tensor: tch::Tensor) -> Result<Self, #error_type_name> {
                 if !#module_name::INIT.is_completed() {
-                    return Err(tensor_types_errors::TensorTypeError::UninitializedError {
+                    return Err(#error_type_name::Uninitialized {
                         type_name: stringify!(#name).to_string()
                     });
                 }
                 let size = tensor.size();
                 let dims = #module_name::DIMS.lock().unwrap();
                 if size != dims.to_vec() {
-                    return Err(tensor_types_errors::TensorTypeError::ShapeMismatchError {
+                    return Err(#error_type_name::ShapeMismatch {
                         type_name: stringify!(#name).to_string(),
                         expected: dims.to_vec(),
                         found: size.to_vec()
@@ -198,12 +199,29 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
                 Self { tensor: self.tensor.shallow_clone() }
             }
 
-            pub fn apply<F>(&self, f: F) -> Result<Self, tensor_types_errors::TensorTypeError>
+            pub fn apply<F>(&self, f: F) -> Result<Self, #error_type_name>
             where
                 F: Fn(&tch::Tensor) -> tch::Tensor,
             {
                 Self::new(f(&self.tensor))
             }
+        }
+
+
+        /// The Errors returned by the TensorType are named like <type_name>Error and provide the
+        /// errors for TensorTypes created by the `tensor_type!` macro.
+        #[derive(thiserror::Error, Debug)]
+        pub enum #error_type_name {
+            #[error("shape mismatch on TensorType {type_name:?}: expected dimensions {expected:?}, found {found:?}")]
+            ShapeMismatch {
+                type_name: String,
+                expected: Vec<i64>,
+                found: Vec<i64>,
+            },
+            #[error("new() called on uninitialized TensorType {type_name:?}")]
+            Uninitialized { type_name: String },
+            #[error("set() called on already initialized TensorType {type_name:?}")]
+            AlreadyInitialized { type_name: String },
         }
 
         /// Implementing Deref allows the wrapped tch::Tensor to be dereferenced.

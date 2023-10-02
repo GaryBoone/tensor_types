@@ -1,8 +1,9 @@
+use anyhow::Error;
 use tch::Tensor;
-use tensor_types::{parameter_type, tensor_type, TensorTypeError};
+use tensor_types::{parameter_type, tensor_type};
 
 // Shows the basic operations for creating and using TensorTypes.
-fn basic_workflow() -> Result<(), TensorTypeError> {
+fn basic_workflow() -> Result<(), Error> {
     // 1. Define the types you'll need.
     parameter_type!(NewType1, i64);
     parameter_type!(NewType2, i64);
@@ -28,7 +29,7 @@ fn basic_workflow() -> Result<(), TensorTypeError> {
 }
 
 // These examples expand the above, but show the errors that can occur.
-fn safeties() -> Result<(), TensorTypeError> {
+fn safeties() -> Result<(), Error> {
     // 1. Define the types you'll need.
     parameter_type!(NewType1, i64);
     parameter_type!(NewType2, i64);
@@ -63,7 +64,7 @@ fn safeties() -> Result<(), TensorTypeError> {
 }
 
 // Show how to access the tensor after creating a TensorType.
-fn details() -> Result<(), TensorTypeError> {
+fn details() -> Result<(), Error> {
     // Create a TensorType as before.
     parameter_type!(NewType1, i64);
     parameter_type!(NewType2, i64);
@@ -99,7 +100,7 @@ fn details() -> Result<(), TensorTypeError> {
 }
 
 // This example shows how to use your own types as parameters to create TensorTypes.
-fn custom_type_usage() -> Result<(), TensorTypeError> {
+fn custom_type_usage() -> Result<(), Error> {
     pub struct MyStruct(i32);
 
     // Just make sure it implements `From<MyStruct> for i64`.
@@ -121,9 +122,99 @@ fn custom_type_usage() -> Result<(), TensorTypeError> {
     Ok(())
 }
 
-fn main() -> Result<(), TensorTypeError> {
+// This example shows what errors can occur when using TensorTypes.
+fn error_handling() -> Result<(), Error> {
+    parameter_type!(Mytype, i64);
+    tensor_type!(MyTensorStruct, [Mytype]);
+
+    // Try to new() before set().
+    match MyTensorStruct::new(Tensor::randn([2], (tch::Kind::Float, tch::Device::Cpu))) {
+        Ok(_) => println!("new() succeeded unexpectedly, but hasn't been set()"),
+        Err(e) => match e {
+            MyTensorStructError::Uninitialized { type_name } => {
+                println!(
+                    "new() failed as expected with an Uninitialized on type: {}",
+                    type_name
+                )
+            }
+            MyTensorStructError::ShapeMismatch {
+                type_name,
+                expected,
+                found,
+            } => {
+                println!("new() failed unexpectedly with a ShapeMismatch error on type {}: expected {:?}, but found {:?}",  type_name, expected, found)
+            }
+            MyTensorStructError::AlreadyInitialized { type_name } => {
+                println!(
+                    "new() failed unexpectedly with an AlreadyInitialized error on type {}",
+                    type_name
+                )
+            }
+        },
+    }
+
+    // Set.
+    MyTensorStruct::set(Mytype(2))?;
+
+    // Try to set() again.
+    match MyTensorStruct::set(Mytype(3)) {
+        Ok(_) => println!("set() unexpectedly succeeded, but was already set()"),
+        Err(e) => match e {
+            MyTensorStructError::Uninitialized { type_name } => {
+                println!("set() failed unexpectedly: {} was uninitialized", type_name)
+            }
+            MyTensorStructError::ShapeMismatch {
+                type_name,
+                expected,
+                found,
+            } => {
+                println!("set() failed unexpectedly with a ShapeMismatch error on type {}: expected {:?}, but found {:?}",  type_name, expected, found)
+            }
+            MyTensorStructError::AlreadyInitialized { type_name } => {
+                println!(
+                    "set() failed as expected with an AlreadyInitialized error on type {}",
+                    type_name
+                )
+            }
+        },
+    }
+
+    let t = Tensor::randn([2], (tch::Kind::Float, tch::Device::Cpu));
+    let my_instance = MyTensorStruct::new(t)?;
+    assert_eq!(my_instance.tensor().size(), &[2]);
+
+    // Try to create a TensorType with the wrong size.
+    match MyTensorStruct::new(Tensor::randn([2, 3], (tch::Kind::Float, tch::Device::Cpu))) {
+        Ok(_) => println!("new() unexpectedly succeeded, but was already set()"),
+        Err(e) => match e {
+            MyTensorStructError::Uninitialized { type_name } => {
+                println!("new() failed unexpectedly: {} was uninitialized", type_name)
+            }
+            MyTensorStructError::ShapeMismatch {
+                type_name,
+                expected,
+                found,
+            } => {
+                println!(
+                    "new() failed as expected with a ShapeMismatch error on type {}: expected {:?}, but found {:?}",
+                    type_name, expected, found)
+            }
+            MyTensorStructError::AlreadyInitialized { type_name } => {
+                println!(
+                    "new() failed unexpectedly with an AlreadyInitialized error on type {}",
+                    type_name
+                )
+            }
+        },
+    }
+
+    Ok(())
+}
+
+fn main() -> Result<(), Error> {
     basic_workflow()?;
     safeties()?;
     details()?;
-    custom_type_usage()
+    custom_type_usage()?;
+    error_handling()
 }

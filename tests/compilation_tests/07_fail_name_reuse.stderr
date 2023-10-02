@@ -22,6 +22,18 @@ error[E0428]: the name `MyTensor` is defined multiple times
   = note: `MyTensor` must be defined only once in the type namespace of this block
   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
 
+error[E0428]: the name `MyTensorError` is defined multiple times
+ --> tests/compilation_tests/07_fail_name_reuse.rs:6:5
+  |
+4 |     tensor_type!(MyTensor, [i64]);
+  |     ----------------------------- previous definition of the type `MyTensorError` here
+5 |     // This line won't compile because the type MyTensor is already defined.
+6 |     tensor_type!(MyTensor, [i64, i64]);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `MyTensorError` redefined here
+  |
+  = note: `MyTensorError` must be defined only once in the type namespace of this block
+  = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
 error[E0119]: conflicting implementations of trait `Debug` for type `main::MyTensor`
  --> tests/compilation_tests/07_fail_name_reuse.rs:6:5
   |
@@ -32,6 +44,39 @@ error[E0119]: conflicting implementations of trait `Debug` for type `main::MyTen
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `main::MyTensor`
   |
   = note: this error originates in the derive macro `Debug` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `Debug` for type `main::MyTensorError`
+ --> tests/compilation_tests/07_fail_name_reuse.rs:6:5
+  |
+4 |     tensor_type!(MyTensor, [i64]);
+  |     ----------------------------- first implementation here
+5 |     // This line won't compile because the type MyTensor is already defined.
+6 |     tensor_type!(MyTensor, [i64, i64]);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `main::MyTensorError`
+  |
+  = note: this error originates in the derive macro `Debug` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `std::error::Error` for type `main::MyTensorError`
+ --> tests/compilation_tests/07_fail_name_reuse.rs:6:5
+  |
+4 |     tensor_type!(MyTensor, [i64]);
+  |     ----------------------------- first implementation here
+5 |     // This line won't compile because the type MyTensor is already defined.
+6 |     tensor_type!(MyTensor, [i64, i64]);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `main::MyTensorError`
+  |
+  = note: this error originates in the derive macro `thiserror::Error` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `std::fmt::Display` for type `main::MyTensorError`
+ --> tests/compilation_tests/07_fail_name_reuse.rs:6:5
+  |
+4 |     tensor_type!(MyTensor, [i64]);
+  |     ----------------------------- first implementation here
+5 |     // This line won't compile because the type MyTensor is already defined.
+6 |     tensor_type!(MyTensor, [i64, i64]);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `main::MyTensorError`
+  |
+  = note: this error originates in the derive macro `thiserror::Error` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0119]: conflicting implementations of trait `Deref` for type `main::MyTensor`
  --> tests/compilation_tests/07_fail_name_reuse.rs:6:5
