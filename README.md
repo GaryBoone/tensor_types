@@ -1,6 +1,6 @@
-# TensorTypes
+# tensor_types
 
-The TensorType crate provides strong typing and size-checking to the tensors in
+The tensor_types crate provides strong typing and size-checking to the tensors in
 PyTorch Rust frameworks, preventing a large class of hard-to-find bugs. 
 
 ### The Problem
