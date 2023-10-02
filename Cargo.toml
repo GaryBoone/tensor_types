@@ -1,0 +1,22 @@
+[package]
+name = "tensor_types"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [".", "tensor_types_proc", "tensor_types_errors"]
+default-members = [".", "tensor_types_proc", "tensor_types_errors"]
+
+[dependencies]
+anyhow = "1.0.75"
+serde = { version = "1.0.188", features = ["derive"], optional = true }
+serde_json = { version = "1.0.107", optional = true }
+tch = "0.13.0"
+tensor_types_proc = { path = "tensor_types_proc" }
+tensor_types_errors = { path = "tensor_types_errors" }
+thiserror = "1.0.48"
+trybuild = "1.0.85"
+
+[features]
+default = []
+use_serde = ["serde", "serde_json"]

@@ -1,0 +1,18 @@
+error[E0382]: borrow of moved value: `my_tensor`
+  --> tests/compilation_tests/05_fail_into_inner.rs:12:22
+   |
+8  |     let my_tensor = MyTensor::new(tensor).unwrap();
+   |         --------- move occurs because `my_tensor` has type `MyTensor`, which does not implement the `Copy` trait
+9  |     println!("{:?}", &my_tensor);
+10 |     let _inner = &my_tensor.into_inner();
+   |                             ------------ `my_tensor` moved due to this method call
+11 |     // This line fails to compile because `into_inner()` returns ownership of the inner tensor.
+12 |     println!("{:?}", &my_tensor);
+   |                      ^^^^^^^^^^ value borrowed here after move
+   |
+note: `MyTensor::into_inner` takes ownership of the receiver `self`, which moves `my_tensor`
+  --> tests/compilation_tests/05_fail_into_inner.rs:3:1
+   |
+3  | tensor_type!(MyTensor, [i64, i64]);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
