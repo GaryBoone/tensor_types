@@ -22,8 +22,8 @@ Writing code that passes Tensors throughout increases defect risk in two primary
 ways:
 - Tensors can change shape, possibly propagating incompatible shapes to other
   code. As tensors are transformed and manipulated, it may not be obvious where
-  their shape is modified. Unexpected changes in shape can lead to bugs that are
-  hard to find. The Rust compiler can offer no help in this case because the
+  their shapes are modified. Unexpected changes in shape can lead to bugs that
+  are hard to find. The Rust compiler can offer no help in this case because the
   representation remains a Tensor no matter the shape.
 - Tensors as arguments to functions or structs can be misordered or misassigned.
   You might have meant for your function to operate on `input1` and `input2`,
