@@ -35,7 +35,7 @@
 //!
 //! # fn main() -> Result<(), anyhow::Error> {
 //!     tensor_type!(MyTensor, [BatchSize, SequenceLength, ModelDimension], tch::Kind::Float);
-//!     MyTensor::set(BatchSize(40), SequenceLength(100), ModelDimension(128))?;
+//!     MyTensor::set(BatchSize(40), SequenceLength(100), ModelDimension(128));
 //! # Ok(())
 //! # }
 //! ```
@@ -51,7 +51,7 @@
 //! # tensor_type!(MyTensor, [BatchSize, SequenceLength, ModelDimension], tch::Kind::Float);
 //!
 //! # fn main() -> Result<(), anyhow::Error> {
-//!     # MyTensor::set(BatchSize(40), SequenceLength(100), ModelDimension(128))?;
+//!     # MyTensor::set(BatchSize(40), SequenceLength(100), ModelDimension(128));
 //!     //... tch::Tensor from somewhere.
 //!     let tensor = tch::Tensor::randn([40, 100, 128], (tch::Kind::Float, tch::Device::Cpu));
 //!     let decoder_input = MyTensor::new(tensor)?;

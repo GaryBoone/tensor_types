@@ -10,7 +10,7 @@ fn basic_workflow() -> Result<(), Error> {
     tensor_type!(MyStruct, [NewType1, NewType2, NewType1], Kind::Float);
 
     // 2. At runtime, define the required dimensions using the typed parameters.
-    MyStruct::set(NewType1(1), NewType2(2), NewType1(3))?;
+    MyStruct::set(NewType1(1), NewType2(2), NewType1(3));
 
     // 3. When you create a new tch::Tensor or receive one from a tch-rs function, wrap it in your
     // TensorType. It will be checked for the correct size when the TensorType is initialized.
@@ -40,7 +40,7 @@ fn safeties() -> Result<(), Error> {
     assert!(MyStruct::new(t).is_err());
 
     // 2. At runtime, define the required dimensions using the typed parameters.
-    MyStruct::set(NewType1(1), NewType2(2), NewType1(3))?;
+    MyStruct::set(NewType1(1), NewType2(2), NewType1(3));
 
     // 3. Now wrap tensors in your type. They'll be checked for the correct size
     // when initialized.
@@ -69,7 +69,7 @@ fn details() -> Result<(), Error> {
     parameter_type!(NewType1, i64);
     parameter_type!(NewType2, i64);
     tensor_type!(MyStruct, [NewType1, NewType2, NewType1], Kind::Float);
-    MyStruct::set(NewType1(1), NewType2(2), NewType1(3))?;
+    MyStruct::set(NewType1(1), NewType2(2), NewType1(3));
     let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
     let my_instance = MyStruct::new(t)?;
 
@@ -114,7 +114,7 @@ fn custom_type_usage() -> Result<(), Error> {
 
     let ms = MyStruct(2);
 
-    MyTensorStruct::set(ms)?;
+    MyTensorStruct::set(ms);
 
     let t = Tensor::randn([2], (Kind::Float, Device::Cpu));
     let my_instance = MyTensorStruct::new(t)?;
@@ -144,23 +144,7 @@ fn error_handling() -> Result<(), Error> {
     }
 
     // Set.
-    MyTensorStruct::set(Mytype(2))?;
-
-    // Try to set() again.
-    match MyTensorStruct::set(Mytype(3)) {
-        Ok(_) => println!("set() unexpectedly succeeded, but was already set()"),
-        Err(e) => match e {
-            MyTensorStructError::AlreadyInitialized { type_name } => {
-                println!(
-                    "set() failed as expected with an AlreadyInitialized error on type {}",
-                    type_name
-                )
-            }
-            _ => {
-                println!("new() failed unexpectedly with an error other than AlreadyInitialized")
-            }
-        },
-    }
+    MyTensorStruct::set(Mytype(2));
 
     let t = Tensor::randn([2], (Kind::Float, Device::Cpu));
     let my_instance = MyTensorStruct::new(t)?;

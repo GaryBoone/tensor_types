@@ -1,7 +1,7 @@
 error[E0308]: arguments to this function are incorrect
   --> tests/compilation_tests/03_fail_type_mismatch2.rs:10:5
    |
-10 |     InputTensor::set(SequenceLength(2), BatchSize(2)).unwrap();
+10 |     InputTensor::set(SequenceLength(2), BatchSize(2));
    |     ^^^^^^^^^^^^^^^^ -----------------  ------------ expected `SequenceLength`, found `BatchSize`
    |                      |
    |                      expected `BatchSize`, found `SequenceLength`
@@ -14,5 +14,5 @@ note: associated function defined here
    = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: swap these arguments
    |
-10 |     InputTensor::set(BatchSize(2), SequenceLength(2)).unwrap();
+10 |     InputTensor::set(BatchSize(2), SequenceLength(2));
    |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

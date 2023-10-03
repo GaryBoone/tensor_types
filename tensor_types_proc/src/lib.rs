@@ -59,7 +59,7 @@ impl Parse for MacroInput {
 /// # use tch::Kind;
 /// tensor_type!(MyTensor, [i64, i64], Kind::Int);
 ///
-/// MyTensor::set(2, 3).unwrap();
+/// MyTensor::set(2, 3);
 /// let tensor = tch::Tensor::from_slice(&[1, 2, 3, 4, 5, 6]).reshape(&[2, 3]);
 /// let wrapper = MyTensor::new(tensor).unwrap();
 /// assert_eq!(wrapper.tensor().size(), &[2, 3]);
@@ -91,7 +91,7 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
         pub mod #module_name {
             use std::sync::{Once, Mutex};
 
-            pub static INIT: Once = Once::new();
+            pub static INIT: Mutex<bool> = Mutex::new(false);
             pub static DIMS: Mutex<[i64; #types_len]> = Mutex::new([0; #types_len]);
             pub static KIND: Mutex<tch::Kind> = Mutex::new(tch::Kind::#kind_variant);
         }
@@ -112,7 +112,7 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// assert_eq!(MyTensor::is_initialized(), false);
             /// ```
             pub fn is_initialized() -> bool {
-                #module_name::INIT.is_completed()
+                *#module_name::INIT.lock().unwrap()
             }
 
             /// Returns the dimensions of the tensor if initialized.
@@ -122,11 +122,11 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # use tensor_types::tensor_type;
             /// # use tch::Kind;
             /// # tensor_type!(MyTensor, [i64, i64], Kind::Float);
-            /// # MyTensor::set(2, 3).unwrap();
+            /// # MyTensor::set(2, 3);
             /// assert_eq!(MyTensor::get_dims(), Some(vec![2, 3]));
             /// ```
             pub fn get_dims() -> Option<Vec<i64>> {
-                if Self::is_initialized() {
+                if *#module_name::INIT.lock().unwrap() {
                     Some(#module_name::DIMS.lock().unwrap().to_vec())
                 } else {
                     None
@@ -143,7 +143,7 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// assert_eq!(MyTensor::get_kind(), Some(Kind::Int64));
             /// ```
             pub fn get_kind() -> Option<tch::Kind> {
-                if Self::is_initialized() {
+                if *#module_name::INIT.lock().unwrap() {
                     Some(*#module_name::KIND.lock().unwrap())
                 } else {
                     None
@@ -161,23 +161,17 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # use tensor_types::tensor_type;
             /// # use tch::Kind;
             /// # tensor_type!(MyTensor, [i64, i64] Kind::Float);
-            /// # MyTensor::set(2, 3).unwrap();
+            /// # MyTensor::set(2, 3);
             /// assert_eq!(MyTensor::get_dims(), Some(vec![2, 3]));
             /// ```
-            pub fn set(#( #vars: #types, )*) -> Result<(), #error_type_name>
+            pub fn set(#( #vars: #types, )*)
             where
                 #( #types: Into<i64>, )*
             {
-                if #module_name::INIT.is_completed() {
-                    return Err(#error_type_name::AlreadyInitialized {
-                        type_name: stringify!(#name).to_string()
-                    });
-                }
-                #module_name::INIT.call_once(|| {
-                    let mut dims = #module_name::DIMS.lock().unwrap();
-                    *dims = [ #( #vars.into(), )* ];
-                });
-                Ok(())
+                let mut dims = #module_name::DIMS.lock().unwrap();
+                *dims = [ #( #vars.into(), )* ];
+                let mut init = #module_name::INIT.lock().unwrap();
+                *init = true;
             }
 
             /// The new() function creates a new wrapper for a tensor. Its input is a tensor that
@@ -191,7 +185,7 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # use tensor_types::tensor_type;
             /// # use tch::Kind;
             /// # tensor_type!(MyTensor, [i64, i64] Kind::Float);
-            /// # MyTensor::set(2, 3).unwrap();
+            /// # MyTensor::set(2, 3);
             /// assert_eq!(MyTensor::get_dims(), Some(vec![2, 3]));
             /// let tensor = tch::Tensor::from_slice(&[1, 2, 3, 4, 5, 6]).reshape(&[2, 3]);
             /// let wrapper = MyTensor::new(tensor).unwrap();
@@ -199,7 +193,7 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// assert_eq!((*wrapper).size(), &[2, 3]);
             /// ```
             pub fn new(tensor: tch::Tensor) -> Result<Self, #error_type_name> {
-                if !#module_name::INIT.is_completed() {
+                if !*#module_name::INIT.lock().unwrap() {
                     return Err(#error_type_name::Uninitialized {
                         type_name: stringify!(#name).to_string()
                     });
@@ -280,8 +274,6 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             },
             #[error("new() called on uninitialized TensorType {type_name:?}")]
             Uninitialized { type_name: String },
-            #[error("set() called on already initialized TensorType {type_name:?}")]
-            AlreadyInitialized { type_name: String },
         }
 
         /// Implementing Deref allows the wrapped tch::Tensor to be dereferenced.

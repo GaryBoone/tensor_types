@@ -3,7 +3,7 @@ use tensor_types::tensor_type;
 tensor_type!(MyTensor, [i64, i64], tch::Kind::Float);
 
 fn main() {
-    MyTensor::set(2, 2).unwrap();
+    MyTensor::set(2, 2);
     let tensor = tch::Tensor::from_slice(&[1, 2, 3, 4]).reshape(vec![2, 2]);
     let my_tensor = MyTensor::new(tensor).unwrap();
     println!("{:?}", &my_tensor);

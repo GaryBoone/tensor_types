@@ -176,9 +176,9 @@ fn main() -> Result<()> {
 
     // Now we use the runtime values to set the shapes of our TensorTypes. Once set, the TensorTypes
     // can be used repeatedly, but their shapes must always match the values set here.
-    EncoderInput::set(batch_size, sequence_length, model_dimension)?;
-    DecoderInput::set(batch_size, sequence_length, model_dimension)?;
-    TransformerOutput::set(batch_size, sequence_length)?;
+    EncoderInput::set(batch_size, sequence_length, model_dimension);
+    DecoderInput::set(batch_size, sequence_length, model_dimension);
+    TransformerOutput::set(batch_size, sequence_length);
 
     after(batch_size, sequence_length, model_dimension)?;
     Ok(())

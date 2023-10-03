@@ -23,13 +23,10 @@ mod tests {
         parameter_type!(MyParam1, i64);
         parameter_type!(MyParam2, i64);
         tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)).unwrap();
-
-        // Error to call set() more than once.
-        match MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)) {
-            Err(MyTensorError::AlreadyInitialized { type_name: _ }) => (),
-            _ => panic!("expected AlreadyInitialized"),
-        };
+        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
+        assert_eq!(MyTensor::get_dims(), Some(vec![1, 2, 3]));
+        MyTensor::set(MyParam1(3), MyParam2(1), MyParam1(2));
+        assert_eq!(MyTensor::get_dims(), Some(vec![3, 1, 2]));
     }
 
     #[test]
@@ -37,7 +34,7 @@ mod tests {
         parameter_type!(MyParam1, i64);
         parameter_type!(MyParam2, i64);
         tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)).unwrap();
+        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
 
         // Error to call new() with wrong-sized tensor.
         let t = Tensor::randn([1, 2, 1], (Kind::Float, Device::Cpu));
@@ -60,7 +57,7 @@ mod tests {
         parameter_type!(MyParam1, i64);
         parameter_type!(MyParam2, i64);
         tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)).unwrap();
+        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
 
         let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
         let my_tensor = MyTensor::new(t).unwrap();
@@ -77,7 +74,7 @@ mod tests {
             [MyParam1, MyParam2, MyParam1, MyParam2],
             Kind::Float
         );
-        MyTensor2::set(MyParam1(1), MyParam2(2), MyParam1(3), MyParam2(3)).unwrap();
+        MyTensor2::set(MyParam1(1), MyParam2(2), MyParam1(3), MyParam2(3));
         let t2 = Tensor::randn([1, 2, 3, 3], (Kind::Float, Device::Cpu));
         let my_tensor2 = MyTensor2::new(t2).unwrap();
         assert_eq!(my_tensor2.tensor().size(), &[1, 2, 3, 3]);
@@ -88,7 +85,7 @@ mod tests {
         parameter_type!(MyParam1, i64);
         parameter_type!(MyParam2, i64);
         tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)).unwrap();
+        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
         let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
         let my_tensor = MyTensor::new(t).unwrap();
 
@@ -108,7 +105,7 @@ mod tests {
         parameter_type!(MyParam1, i64);
         parameter_type!(MyParam2, i64);
         tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)).unwrap();
+        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
         let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
         let my_tensor = MyTensor::new(t).unwrap();
 
@@ -134,14 +131,14 @@ mod tests {
     fn test_kind() {
         // Initialize a tensor_type _without_ `tch::` in the kind.
         tensor_type!(MyTensor, [i64, i64], Kind::Int);
-        MyTensor::set(1, 3).unwrap();
+        MyTensor::set(1, 3);
         let tensor = Tensor::from_slice(&[0, 1, 2]).reshape([1, 3]);
         let my_tensor = MyTensor::new(tensor).unwrap();
         assert_eq!(*my_tensor.size(), vec![1, 3]);
 
         // Initialize a tensor_type _with_ `tch::` in the kind.
         tensor_type!(MyTensor2, [i64, i64], tch::Kind::Float);
-        MyTensor2::set(1, 3).unwrap();
+        MyTensor2::set(1, 3);
         let tensor2 = Tensor::from_slice(&[0, 1, 2]).reshape([1, 3]);
         let my_tensor2 = MyTensor::new(tensor2).unwrap();
         assert_eq!(*my_tensor2.size(), vec![1, 3]);
@@ -167,7 +164,7 @@ mod tests {
     #[test]
     fn test_clone() {
         tensor_type!(MyTensor, [i64, i64], Kind::Int);
-        MyTensor::set(2, 3).unwrap();
+        MyTensor::set(2, 3);
         let tensor = Tensor::from_slice(&[0, 1, 2, 3, 4, 5]).reshape([2, 3]);
         let my_tensor = MyTensor::new(tensor).unwrap();
         // clone() makes a clone of MyTensor with a shallow_clone of the wrapped tensor.
@@ -181,7 +178,7 @@ mod tests {
         parameter_type!(MyParam1, i64);
         parameter_type!(MyParam2, i64);
         tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3)).unwrap();
+        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
         let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
         let my_tensor = MyTensor::new(t).unwrap();
 

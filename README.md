@@ -173,8 +173,8 @@ provide no help on their effects on Tensor sizes and kinds like this:
     // 2. At runtime, set the required dimensions for the typed parameters.
     //    Because the tensor dimensions are themselves types, these can't be
     //    mixed up.
-    DecoderInputType::set(BatchSize(1), SequenceLength(100), ModelDim(256))?;
-    BatchModelType::set(SequenceLength(100), ModelDim(256))?;
+    DecoderInputType::set(BatchSize(1), SequenceLength(100), ModelDim(256));
+    BatchModelType::set(SequenceLength(100), ModelDim(256));
 
     // 3. Use your new type's new() function to create a new instance of your
     //    type that wraps any tch::Tensor. The tensor will be checked for the

@@ -20,8 +20,8 @@ fn transform(in1: &BatchSeqTensor, in2: &BatchSeqModelTensor) {
 }
 
 fn main() {
-    BatchSeqTensor::set(BatchSize(1), SequenceLength(2)).unwrap();
-    BatchSeqModelTensor::set(BatchSize(1), SequenceLength(2), ModelDimension(3)).unwrap();
+    BatchSeqTensor::set(BatchSize(1), SequenceLength(2));
+    BatchSeqModelTensor::set(BatchSize(1), SequenceLength(2), ModelDimension(3));
 
     let t1 = tch::Tensor::from_slice(&[1, 2]).reshape(vec![1, 2]);
     let bst_in = BatchSeqTensor::new(t1).unwrap();
