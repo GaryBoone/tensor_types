@@ -73,12 +73,20 @@ parameter_type!(ModelDimension, i64);
 // after the data their dimensions represent, e.g. BatchSequenceEmbed or BatchToken.
 // The tensor_type! macro accepts the new type name, followed by the parameter types that define the
 // tensor's shape.
-tensor_type!(EncoderInput, [BatchSize, SequenceLength, ModelDimension]);
+tensor_type!(
+    EncoderInput,
+    [BatchSize, SequenceLength, ModelDimension],
+    Kind::Float
+);
 // The DecoderInput will be a TensorType with shape [BatchSize, SequenceLength, ModelDimension].
-tensor_type!(DecoderInput, [BatchSize, SequenceLength, ModelDimension]);
+tensor_type!(
+    DecoderInput,
+    [BatchSize, SequenceLength, ModelDimension],
+    Kind::Float
+);
 // The Transformer will output the sequence of tokens, so the TransformerOutput will be a TensorType
 // with shape [BatchSize, SequenceLength].
-tensor_type!(TransformerOutput, [BatchSize, SequenceLength]);
+tensor_type!(TransformerOutput, [BatchSize, SequenceLength], Kind::Float);
 
 // The modified transformer function now accepts typed tensors, so it's impossible to pass in the
 // wrong tensor for any argument. The compiler will catch such errors for us.

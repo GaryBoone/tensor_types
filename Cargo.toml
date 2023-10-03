@@ -1,6 +1,6 @@
 [package]
 name = "tensor_types"
-version = "0.9.1"
+version = "1.0.0"
 edition = "2021"
 description = "Create typed and sized-checked Rust wrappers for Tensors for more reliable ML code."
 license = "MIT OR Apache-2.0"
@@ -16,7 +16,7 @@ serde_json = { version = "1.0.107", optional = true }
 tch = "0.13.0"
 thiserror = "1.0.48"
 trybuild = "1.0.85"
-tensor_types_proc = { version = "0.9.0", path = "tensor_types_proc" }
+tensor_types_proc = { version = "1.0.0", path = "tensor_types_proc" }
 
 [features]
 default = []

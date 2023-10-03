@@ -1,6 +1,6 @@
 use tensor_types::tensor_type;
 
-tensor_type!(MyTensor, [i64, i64]);
+tensor_type!(MyTensor, [i64, i64], tch::Kind::Float);
 
 fn main() {
     MyTensor::set(2, 2).unwrap();

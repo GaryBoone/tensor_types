@@ -9,8 +9,8 @@ error[E0308]: arguments to this function are incorrect
 note: associated function defined here
   --> tests/compilation_tests/03_fail_type_mismatch2.rs:5:1
    |
-5  | tensor_type!(InputTensor, [BatchSize, SequenceLength]);
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5  | tensor_type!(InputTensor, [BatchSize, SequenceLength], tch::Kind::Float);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: swap these arguments
    |

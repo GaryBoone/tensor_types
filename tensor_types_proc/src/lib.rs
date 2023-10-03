@@ -17,6 +17,7 @@ use syn::{parse_macro_input, Ident, Type};
 struct MacroInput {
     name: Ident,
     types: Vec<Type>,
+    kind: syn::Path,
 }
 
 impl Parse for MacroInput {
@@ -31,7 +32,11 @@ impl Parse for MacroInput {
         let types = Punctuated::<Type, Comma>::parse_terminated(&content)?;
         let types = types.into_iter().collect();
 
-        Ok(MacroInput { name, types })
+        // Parse the tch::Kind
+        input.parse::<syn::Token![,]>()?;
+        let kind: syn::Path = input.parse()?;
+
+        Ok(MacroInput { name, types, kind })
     }
 }
 
@@ -51,7 +56,8 @@ impl Parse for MacroInput {
 /// # Example
 /// ```rust
 /// # use tensor_types_proc::tensor_type;
-/// tensor_type!(MyTensor, [i64, i64]);
+/// # use tch::Kind;
+/// tensor_type!(MyTensor, [i64, i64], Kind::Int);
 ///
 /// MyTensor::set(2, 3).unwrap();
 /// let tensor = tch::Tensor::from_slice(&[1, 2, 3, 4, 5, 6]).reshape(&[2, 3]);
@@ -62,7 +68,7 @@ impl Parse for MacroInput {
 
 #[proc_macro]
 pub fn tensor_type(input: TokenStream) -> TokenStream {
-    let MacroInput { name, types } = parse_macro_input!(input as MacroInput);
+    let MacroInput { name, types, kind } = parse_macro_input!(input as MacroInput);
 
     // Generate unique variable names like x0, x1, etc.
     let vars: Vec<Ident> = (0..types.len())
@@ -76,12 +82,18 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
 
     let error_type_name = Ident::new(&format!("{}Error", &name), proc_macro2::Span::call_site());
 
+    // The user may input `tch::Kind::Float` or just `Kind::Float`, so we need to just store the
+    // variant and construct the full path ourselves.
+    let kind_variant = kind.segments.last().unwrap().ident.clone();
+
     let expanded = quote! {
 
         pub mod #module_name {
             use std::sync::{Once, Mutex};
+
             pub static INIT: Once = Once::new();
             pub static DIMS: Mutex<[i64; #types_len]> = Mutex::new([0; #types_len]);
+            pub static KIND: Mutex<tch::Kind> = Mutex::new(tch::Kind::#kind_variant);
         }
 
         #[derive(Debug)]
@@ -95,7 +107,8 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # Example
             /// ```
             /// # use tensor_types::tensor_type;
-            /// # tensor_type!(MyTensor, [i64, i64]);
+            /// # use tch::Kind;
+            /// # tensor_type!(MyTensor, [i64, i64], Kind::Float);
             /// assert_eq!(MyTensor::is_initialized(), false);
             /// ```
             pub fn is_initialized() -> bool {
@@ -107,13 +120,31 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # Example
             /// ```
             /// # use tensor_types::tensor_type;
-            /// # tensor_type!(MyTensor, [i64, i64]);
+            /// # use tch::Kind;
+            /// # tensor_type!(MyTensor, [i64, i64], Kind::Float);
             /// # MyTensor::set(2, 3).unwrap();
             /// assert_eq!(MyTensor::get_dims(), Some(vec![2, 3]));
             /// ```
             pub fn get_dims() -> Option<Vec<i64>> {
                 if Self::is_initialized() {
                     Some(#module_name::DIMS.lock().unwrap().to_vec())
+                } else {
+                    None
+                }
+            }
+
+            /// Returns the kind of the tensor.
+            ///
+            /// # Example
+            /// ```
+            /// # use tensor_types::tensor_type;
+            /// # use tch::Kind;
+            /// # tensor_type!(MyTensor, [i64, i64], Kind::Int64);
+            /// assert_eq!(MyTensor::get_kind(), Some(Kind::Int64));
+            /// ```
+            pub fn get_kind() -> Option<tch::Kind> {
+                if Self::is_initialized() {
+                    Some(*#module_name::KIND.lock().unwrap())
                 } else {
                     None
                 }
@@ -128,7 +159,8 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # Example
             /// ```
             /// # use tensor_types::tensor_type;
-            /// # tensor_type!(MyTensor, [i64, i64]);
+            /// # use tch::Kind;
+            /// # tensor_type!(MyTensor, [i64, i64] Kind::Float);
             /// # MyTensor::set(2, 3).unwrap();
             /// assert_eq!(MyTensor::get_dims(), Some(vec![2, 3]));
             /// ```
@@ -157,7 +189,8 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # Example
             /// ```
             /// # use tensor_types::tensor_type;
-            /// # tensor_type!(MyTensor, [i64, i64]);
+            /// # use tch::Kind;
+            /// # tensor_type!(MyTensor, [i64, i64] Kind::Float);
             /// # MyTensor::set(2, 3).unwrap();
             /// assert_eq!(MyTensor::get_dims(), Some(vec![2, 3]));
             /// let tensor = tch::Tensor::from_slice(&[1, 2, 3, 4, 5, 6]).reshape(&[2, 3]);
@@ -171,6 +204,18 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
                         type_name: stringify!(#name).to_string()
                     });
                 }
+
+                // Check kind.
+                let kind = #module_name::KIND.lock().unwrap();
+                if *kind != tensor.kind() {
+                    return Err(#error_type_name::KindMismatch {
+                        type_name: stringify!(#name).to_string(),
+                        expected: *kind,
+                        found: tensor.kind()
+                    });
+                }
+
+                // Check size.
                 let size = tensor.size();
                 let dims = #module_name::DIMS.lock().unwrap();
                 if size != dims.to_vec() {
@@ -196,8 +241,9 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
             /// # Examples
             ///
             /// ```rust
-            /// # use tensor_types::tensor_type;  // Adjust this import to your setup
-            /// # tensor_type!{YourType, i64, i64}  // Assuming your macro is invoked like this
+            /// # use tensor_types::tensor_type;
+            /// # use tch::Kind;
+            /// # tensor_type!(YourType, i64, i64], Kind::Float);
             /// let _ = YourType::set(2, 3);
             /// let tensor = tch::Tensor::of_size(&[2, 3]);
             /// let wrapper = YourType::new(tensor).unwrap();
@@ -225,6 +271,12 @@ pub fn tensor_type(input: TokenStream) -> TokenStream {
                 type_name: String,
                 expected: Vec<i64>,
                 found: Vec<i64>,
+            },
+            #[error("kind mismatch on TensorType {type_name:?}: expected kind {expected:?}, found {found:?}")]
+            KindMismatch {
+                type_name: String,
+                expected: tch::Kind,
+                found: tch::Kind,
             },
             #[error("new() called on uninitialized TensorType {type_name:?}")]
             Uninitialized { type_name: String },

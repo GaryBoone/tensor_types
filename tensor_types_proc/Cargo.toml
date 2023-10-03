@@ -1,6 +1,6 @@
 [package]
 name = "tensor_types_proc"
-version = "0.9.1"
+version = "1.0.0"
 edition = "2021"
 description = "Support proc_macro for the tensor_types crate"
 license = "MIT OR Apache-2.0"

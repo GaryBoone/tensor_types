@@ -13,6 +13,6 @@ error[E0382]: borrow of moved value: `my_tensor`
 note: `MyTensor::into_inner` takes ownership of the receiver `self`, which moves `my_tensor`
   --> tests/compilation_tests/05_fail_into_inner.rs:3:1
    |
-3  | tensor_type!(MyTensor, [i64, i64]);
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3  | tensor_type!(MyTensor, [i64, i64], tch::Kind::Float);
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)

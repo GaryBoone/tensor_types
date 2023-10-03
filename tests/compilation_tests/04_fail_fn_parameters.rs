@@ -3,10 +3,15 @@ use tensor_types::{parameter_type, tensor_type};
 parameter_type!(BatchSize, i64);
 parameter_type!(SequenceLength, i64);
 parameter_type!(ModelDimension, i64);
-tensor_type!(BatchSeqTensor, [BatchSize, SequenceLength]);
+tensor_type!(
+    BatchSeqTensor,
+    [BatchSize, SequenceLength],
+    tch::Kind::Float
+);
 tensor_type!(
     BatchSeqModelTensor,
-    [BatchSize, SequenceLength, ModelDimension]
+    [BatchSize, SequenceLength, ModelDimension],
+    tch::Kind::Float
 );
 
 fn transform(in1: &BatchSeqTensor, in2: &BatchSeqModelTensor) {

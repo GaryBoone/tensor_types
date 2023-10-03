@@ -1,7 +1,5 @@
 use tensor_types::tensor_type;
 
-tensor_type!(MyTensor, [i64, i64]);
-
 fn main() {
     // The goal is to create a tensor type that can be set to a value of type MyStruct.
     #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Hash)]
@@ -16,5 +14,5 @@ fn main() {
     //     }
     // }
 
-    tensor_type!(MyTensorStruct, [MyStruct]);
+    tensor_type!(MyTensorStruct, [MyStruct], tch::Kind::Float);
 }

@@ -1,8 +1,8 @@
 error[E0277]: the trait bound `i64: From<MyStruct>` is not satisfied
-  --> tests/compilation_tests/06_fail_missing_into.rs:19:5
+  --> tests/compilation_tests/06_fail_missing_into.rs:17:5
    |
-19 |     tensor_type!(MyTensorStruct, [MyStruct]);
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<MyStruct>` is not implemented for `i64`
+17 |     tensor_type!(MyTensorStruct, [MyStruct], tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<MyStruct>` is not implemented for `i64`
    |
    = help: the following other types implement trait `From<T>`:
              <i64 as From<bool>>
