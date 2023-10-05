@@ -1,8 +1,11 @@
 use tensor_types::tensor_type;
 
-tensor_type!(MyTensor, [i64, i64], tch::Kind::Float);
-
-fn main() {
-    // This won't compile because the passed-in types don't match the declared types.
-    MyTensor::set(2i32, 2i64);
+// This won't compile because the one of the parameters in the Params struct passed-in to the
+// tensor_types_ macro can't be converted to an i64. `From<f64>` is not implemented for `i64`.
+pub struct Params {
+    my_param1: f64,
+    my_param2: i64,
 }
+tensor_type!(MyTensor, [my_param1, my_param2], Params, tch::Kind::Double);
+
+fn main() {}

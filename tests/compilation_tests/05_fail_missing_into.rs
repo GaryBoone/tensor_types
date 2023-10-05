@@ -5,6 +5,10 @@ fn main() {
     #[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Hash)]
     pub struct MyStruct(i64);
 
+    pub struct Params {
+        my_struct1: MyStruct,
+    }
+
     // The problem is that the user has not implemented From<MyStruct> for i64.
     //
     // It would look like:
@@ -14,5 +18,9 @@ fn main() {
     //     }
     // }
 
-    tensor_type!(MyTensorStruct, [MyStruct], tch::Kind::Float);
+    let params = Params {
+        my_struct1: MyStruct(1),
+    };
+
+    tensor_type!(MyTensorStruct, [my_struct1], Params, tch::Kind::Float);
 }

@@ -1,17 +1,17 @@
 error[E0308]: arguments to this function are incorrect
-  --> tests/compilation_tests/04_fail_fn_parameters.rs:33:5
+  --> tests/compilation_tests/03_fail_fn_parameters.rs:43:5
    |
-33 |     transform(&bsdt_in, &bst_in);
+43 |     transform(&bsdt_in, &bst_in);
    |     ^^^^^^^^^ --------  ------- expected `&BatchSeqModelTensor`, found `&BatchSeqTensor`
    |               |
    |               expected `&BatchSeqTensor`, found `&BatchSeqModelTensor`
    |
 note: function defined here
-  --> tests/compilation_tests/04_fail_fn_parameters.rs:17:4
+  --> tests/compilation_tests/03_fail_fn_parameters.rs:24:4
    |
-17 | fn transform(in1: &BatchSeqTensor, in2: &BatchSeqModelTensor) {
+24 | fn transform(in1: &BatchSeqTensor, in2: &BatchSeqModelTensor) {
    |    ^^^^^^^^^ --------------------  -------------------------
 help: swap these arguments
    |
-33 |     transform(&bst_in, &bsdt_in);
+43 |     transform(&bst_in, &bsdt_in);
    |              ~~~~~~~~~~~~~~~~~~~

@@ -1,8 +1,8 @@
 error[E0277]: the trait bound `i64: From<MyStruct>` is not satisfied
-  --> tests/compilation_tests/06_fail_missing_into.rs:17:5
+  --> tests/compilation_tests/05_fail_missing_into.rs:25:5
    |
-17 |     tensor_type!(MyTensorStruct, [MyStruct], tch::Kind::Float);
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<MyStruct>` is not implemented for `i64`
+25 |     tensor_type!(MyTensorStruct, [my_struct1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `From<MyStruct>` is not implemented for `i64`
    |
    = help: the following other types implement trait `From<T>`:
              <i64 as From<bool>>
@@ -15,5 +15,4 @@ error[E0277]: the trait bound `i64: From<MyStruct>` is not satisfied
              <i64 as From<Scalar>>
            and $N others
    = note: required for `MyStruct` to implement `Into<i64>`
-   = help: see issue #48214
    = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)

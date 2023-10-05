@@ -2,44 +2,113 @@
 mod tests {
     use anyhow::Result;
     use tch::{Device, Kind, Tensor};
-    use tensor_types::{parameter_type, tensor_type};
+    use tensor_types::{parameter_type, tensor_type, TensorTypeError};
 
+    // This test shows the basic, correct usage of the parameter_type and tensor_type macros.
     #[test]
-    fn test_uninitialized_error() {
+    fn test_basic() {
+        // 1. Somewhere in your code, define the types your program will use.
+        // Define a parameter type we'll use to specify the dimensionality of our tensors.
         parameter_type!(MyParam1, i64);
         parameter_type!(MyParam2, i64);
-        tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
+        parameter_type!(MyParam3, i64);
+        // Define a parameter structure for the runtime values your tensor types will use.
+        pub struct Params {
+            my_param1: MyParam1,
+            my_param2: MyParam2,
+            my_param3: MyParam3,
+        }
+        // Define a TensorType with a unique name, telling it which parameters to use for size
+        // checking.
+        tensor_type!(
+            MyTensor,
+            [my_param1, my_param2, my_param3],
+            Params,
+            Kind::Float
+        );
 
-        // Error to call new() before set().
-        let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
-        match MyTensor::new(t) {
-            Err(MyTensorError::Uninitialized { type_name: _ }) => (),
-            _ => panic!("expected Uninitialized"),
+        // 2. At some point near the start of your program, instantiate the parameters structure to
+        // given them runtime values. For example, these may be read from a config file.
+        let params = Params {
+            my_param1: MyParam1(1),
+            my_param2: MyParam2(2),
+            my_param3: MyParam3(3),
         };
+
+        // 3. Now throughout your program, you can create instance of your tensor type that will
+        // be checked for size and kind correctness.
+        let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
+        let my_tensor = MyTensor::new(t, &params).unwrap();
+
+        // Call new() to create another instance, again checking the size and kind.
+        let t2 = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
+        assert!(MyTensor::new(t2, &params).is_ok());
+
+        // You can access the tensor with the tensor() method.
+        assert_eq!(my_tensor.tensor().size(), &[1, 2, 3]);
+        // Or by dereferencing it.
+        assert_eq!((*my_tensor).size(), &[1, 2, 3]);
+
+        // Create a second TensorType with different size and kind.
+        tensor_type!(
+            MyTensor2,
+            [my_param1, my_param2, my_param1, my_param2], // Note repeated dimensions. That's ok.
+            Params,
+            Kind::Int64
+        );
+        let t2 = Tensor::from_slice(&[1, 2, 3, 4])
+            .reshape([1, 2, 1, 2])
+            .to_kind(Kind::Int64);
+        let my_tensor2 = MyTensor2::new(t2, &params).unwrap();
+        assert_eq!(my_tensor2.tensor().size(), &[1, 2, 1, 2]);
     }
 
-    #[test]
-    fn test_multiple_set() {
-        parameter_type!(MyParam1, i64);
-        parameter_type!(MyParam2, i64);
-        tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
-        assert_eq!(MyTensor::get_dims(), Some(vec![1, 2, 3]));
-        MyTensor::set(MyParam1(3), MyParam2(1), MyParam1(2));
-        assert_eq!(MyTensor::get_dims(), Some(vec![3, 1, 2]));
+    // For the other tests, define these globally.
+    parameter_type!(MyParam1, i64);
+    parameter_type!(MyParam2, i64);
+    parameter_type!(MyParam3, i64);
+    pub struct Params {
+        my_param1: MyParam1,
+        my_param2: MyParam2,
+        my_param3: MyParam3,
+    }
+    tensor_type!(
+        MyTensor,
+        [my_param1, my_param2, my_param3],
+        Params,
+        Kind::Float
+    );
+    fn setup() -> Params {
+        Params {
+            my_param1: MyParam1(1),
+            my_param2: MyParam2(2),
+            my_param3: MyParam3(3),
+        }
     }
 
     #[test]
     fn test_wrong_size() {
-        parameter_type!(MyParam1, i64);
-        parameter_type!(MyParam2, i64);
-        tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
+        let params = setup();
 
-        // Error to call new() with wrong-sized tensor.
+        // It's an error to call new() with a wrongly-dimensioned tensor.
+        let t = Tensor::randn([1, 2], (Kind::Float, Device::Cpu));
+        match MyTensor::new(t, &params) {
+            Err(TensorTypeError::ShapeMismatch {
+                type_name,
+                expected,
+                found,
+            }) => {
+                if type_name != "MyTensor" || expected != vec![1, 2, 3] || found != vec![1, 2] {
+                    panic!("expected ShapeMismatch, but unexpected type_name ({}), found ({:?}) or expected ({:?})", type_name, found, expected)
+                }
+            }
+            _ => panic!("expected ShapeMismatch"),
+        };
+
+        // It's an error to call new() with a wrongly-sized tensor.
         let t = Tensor::randn([1, 2, 1], (Kind::Float, Device::Cpu));
-        match MyTensor::new(t) {
-            Err(MyTensorError::ShapeMismatch {
+        match MyTensor::new(t, &params) {
+            Err(TensorTypeError::ShapeMismatch {
                 type_name,
                 expected,
                 found,
@@ -53,61 +122,48 @@ mod tests {
     }
 
     #[test]
-    fn test_basic() {
-        parameter_type!(MyParam1, i64);
-        parameter_type!(MyParam2, i64);
-        tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
+    fn test_wrong_kind() {
+        let params = setup();
 
-        let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
-        let my_tensor = MyTensor::new(t).unwrap();
-
-        // Ok to call new() again with right-sized tensor to create another instance.
-        let t2 = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
-        assert!(MyTensor::new(t2).is_ok());
-
-        assert_eq!(my_tensor.tensor().size(), &[1, 2, 3]);
-
-        // Create a second TensorType, confirming independence of dimensions.
-        tensor_type!(
-            MyTensor2,
-            [MyParam1, MyParam2, MyParam1, MyParam2],
-            Kind::Float
-        );
-        MyTensor2::set(MyParam1(1), MyParam2(2), MyParam1(3), MyParam2(3));
-        let t2 = Tensor::randn([1, 2, 3, 3], (Kind::Float, Device::Cpu));
-        let my_tensor2 = MyTensor2::new(t2).unwrap();
-        assert_eq!(my_tensor2.tensor().size(), &[1, 2, 3, 3]);
+        // It's an error to call new() with the wrong kind of tensor.
+        let t = Tensor::from_slice(&[1, 2, 3, 4, 5, 6])
+            .reshape([1, 2, 3])
+            .to_kind(Kind::Int64);
+        match MyTensor::new(t, &params) {
+            Err(TensorTypeError::KindMismatch {
+                type_name,
+                expected,
+                found,
+            }) => {
+                if type_name != "MyTensor" || expected != Kind::Float || found != Kind::Int64 {
+                    panic!("expected ShapeMismatch, but unexpected type_name ({}), found ({:?}) or expected ({:?})", type_name, found, expected)
+                }
+            }
+            _ => panic!("expected KindMismatch"),
+        };
     }
 
     #[test]
     fn test_types() {
-        parameter_type!(MyParam1, i64);
-        parameter_type!(MyParam2, i64);
-        tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
+        let params = setup();
         let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
-        let my_tensor = MyTensor::new(t).unwrap();
+        let my_tensor = MyTensor::new(t, &params).unwrap();
 
         fn type_of<T>(_: T) -> &'static str {
             std::any::type_name::<T>()
         }
 
-        assert_eq!(
-            type_of(&my_tensor),
-            "&tensor_types_tests::tests::test_types::MyTensor"
-        );
+        // The type of my_tensor is MyTensor.
+        assert_eq!(type_of(&my_tensor), "&tensor_types_tests::tests::MyTensor");
+        // The type of what it wraps is Tensor.
         assert_eq!(type_of(&*my_tensor), "&tch::wrappers::tensor::Tensor");
     }
 
     #[test]
     fn test_accessors() {
-        parameter_type!(MyParam1, i64);
-        parameter_type!(MyParam2, i64);
-        tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
+        let params = setup();
         let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
-        let my_tensor = MyTensor::new(t).unwrap();
+        let my_tensor = MyTensor::new(t, &params).unwrap();
 
         // Access the tensor using the tensor() function.
         assert_eq!(my_tensor.tensor().size(), &[1, 2, 3]);
@@ -128,62 +184,25 @@ mod tests {
     }
 
     #[test]
-    fn test_kind() {
-        // Initialize a tensor_type _without_ `tch::` in the kind.
-        tensor_type!(MyTensor, [i64, i64], Kind::Int);
-        MyTensor::set(1, 3);
-        let tensor = Tensor::from_slice(&[0, 1, 2]).reshape([1, 3]);
-        let my_tensor = MyTensor::new(tensor).unwrap();
-        assert_eq!(*my_tensor.size(), vec![1, 3]);
-
-        // Initialize a tensor_type _with_ `tch::` in the kind.
-        tensor_type!(MyTensor2, [i64, i64], tch::Kind::Float);
-        MyTensor2::set(1, 3);
-        let tensor2 = Tensor::from_slice(&[0, 1, 2]).reshape([1, 3]);
-        let my_tensor2 = MyTensor::new(tensor2).unwrap();
-        assert_eq!(*my_tensor2.size(), vec![1, 3]);
-
-        // Create with wrong kind.
-        let tensor3 = Tensor::from_slice(&[0.0, 1.0, 2.0]); // Double.
-
-        // MyTensor is Int.
-        match MyTensor::new(tensor3) {
-            Err(MyTensorError::KindMismatch {
-                type_name,
-                expected,
-                found,
-            }) => {
-                if type_name != "MyTensor" || expected != Kind::Int || found != Kind::Double {
-                    panic!("expected KindMismatch, but unexpected type_name ({}), found ({:?}) or expected ({:?})", type_name, found, expected)
-                }
-            }
-            _ => panic!("expected KindMismatch"),
-        };
-    }
-
-    #[test]
     fn test_clone() {
-        tensor_type!(MyTensor, [i64, i64], Kind::Int);
-        MyTensor::set(2, 3);
+        let params = setup();
+        tensor_type!(MyTensor2, [my_param2, my_param3], Params, Kind::Int);
         let tensor = Tensor::from_slice(&[0, 1, 2, 3, 4, 5]).reshape([2, 3]);
-        let my_tensor = MyTensor::new(tensor).unwrap();
+        let my_tensor2 = MyTensor2::new(tensor, &params).unwrap();
         // clone() makes a clone of MyTensor with a shallow_clone of the wrapped tensor.
-        let cloned_wrapper = my_tensor.clone();
+        let cloned_wrapper = my_tensor2.clone(&params).unwrap();
 
-        assert_eq!(cloned_wrapper.size(), vec![2, 3]);
+        assert_eq!((*cloned_wrapper).size(), vec![2, 3]);
     }
 
     #[test]
-    fn test_apply() {
-        parameter_type!(MyParam1, i64);
-        parameter_type!(MyParam2, i64);
-        tensor_type!(MyTensor, [MyParam1, MyParam2, MyParam1], Kind::Float);
-        MyTensor::set(MyParam1(1), MyParam2(2), MyParam1(3));
+    fn test_apply_fn() {
+        let params = setup();
         let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
-        let my_tensor = MyTensor::new(t).unwrap();
+        let my_tensor = MyTensor::new(t, &params).unwrap();
 
-        // Test the apply() method.
-        let new_my_tensor = my_tensor.apply(|t| t.fill(1.0)).unwrap();
+        // Test the apply_fn() method.
+        let new_my_tensor = my_tensor.apply_fn(|t| t.fill(1.0), &params).unwrap();
         assert_eq!(new_my_tensor.tensor().size(), &[1, 2, 3]);
         let tensor_of_ones = Tensor::ones([1, 2, 3], (Kind::Float, Device::Cpu));
         assert_eq!(
@@ -201,10 +220,10 @@ mod tests {
             1
         );
 
-        // But it's an error if the function given to apply changes the size of the wrapped tensor.
+        // But it's an error if the function given to apply_fn changes the size of the wrapped tensor.
         // The tensor shape is fixed and is checked.
-        match my_tensor.apply(|t| t.transpose(1, 2)) {
-            Err(MyTensorError::ShapeMismatch {
+        match my_tensor.apply_fn(|t| t.transpose(1, 2), &params) {
+            Err(TensorTypeError::ShapeMismatch {
                 type_name,
                 expected,
                 found,

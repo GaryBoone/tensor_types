@@ -21,12 +21,17 @@
 /// assert_eq!(*param, 42);
 /// assert_eq!(i64::from(param), 42i64);
 /// ```
+/// Copy is also implemented for each newtype (which requires Clone), so that they can be passed by
+/// value. Debug is commonly required, such as by the tch::nn::ModuleT trait. Hash is provided so
+/// that these types can be used as keys in a HashMap. Serialize and Deserialize are provided so
+/// that the model can be saved and loaded.
 #[macro_export]
 macro_rules! parameter_type {
     ($type_name:ident, $inner_type:ty) => {
-        #[derive(Debug, Clone, Copy)]
-        #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-        pub struct $type_name($inner_type);
+        #[derive(
+            Debug, Clone, Copy, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize, Hash,
+        )]
+        pub struct $type_name(pub $inner_type); // TODO: remove pub?
 
         /// Implements the conversion from an i64 value to the specified parameter type.
         impl From<i64> for $type_name {
@@ -72,7 +77,22 @@ macro_rules! parameter_type {
         /// Implements the Display trait for the given type.
         impl std::fmt::Display for $type_name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{}", self.0)
+                use num_format::ToFormattedString;
+                write!(f, "{}", self.0.to_formatted_string(&num_format::Locale::en))
+            }
+        }
+
+        // Implements the Default trait for the given type.
+        impl Default for $type_name {
+            fn default() -> Self {
+                $type_name(Default::default())
+            }
+        }
+
+        // TODO: Remove.
+        impl $type_name {
+            pub fn v(&self) -> $inner_type {
+                self.0
             }
         }
     };

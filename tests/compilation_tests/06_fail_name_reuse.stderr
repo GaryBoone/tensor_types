@@ -1,0 +1,99 @@
+error[E0428]: the name `MyTensor` is defined multiple times
+  --> tests/compilation_tests/06_fail_name_reuse.rs:8:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `MyTensor` redefined here
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- previous definition of the type `MyTensor` here
+   |
+   = note: `MyTensor` must be defined only once in the type namespace of this block
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `Debug` for type `main::MyTensor`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:10:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- first implementation here
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `main::MyTensor`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0119]: conflicting implementations of trait `Deref` for type `main::MyTensor`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:10:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- first implementation here
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `main::MyTensor`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `new`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:8:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `new`
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- other definition for `new`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `tensor`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:8:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `tensor`
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- other definition for `tensor`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `tensor_mut`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:8:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `tensor_mut`
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- other definition for `tensor_mut`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `apply_fn`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:8:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `apply_fn`
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- other definition for `apply_fn`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `clone`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:8:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `clone`
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- other definition for `clone`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0592]: duplicate definitions with name `into_inner`
+  --> tests/compilation_tests/06_fail_name_reuse.rs:8:5
+   |
+8  |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ duplicate definitions for `into_inner`
+9  |     // This line won't compile because the type MyTensor is already defined.
+10 |     tensor_type!(MyTensor, [my_param1], Params, tch::Kind::Float);
+   |     ------------------------------------------------------------- other definition for `into_inner`
+   |
+   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
