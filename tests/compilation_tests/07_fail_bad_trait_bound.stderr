@@ -1,0 +1,14 @@
+error[E0277]: the trait bound `BatchSeqDReducedTensor: AttentionTensorTrait` is not satisfied
+  --> tests/compilation_tests/07_fail_bad_trait_bound.rs:52:23
+   |
+52 |     let _ = attention(&query, &params).unwrap();
+   |             --------- ^^^^^^ the trait `AttentionTensorTrait` is not implemented for `BatchSeqDReducedTensor`
+   |             |
+   |             required by a bound introduced by this call
+   |
+   = help: the trait `AttentionTensorTrait` is implemented for `BatchSeqDModelTensor`
+note: required by a bound in `attention`
+  --> tests/compilation_tests/07_fail_bad_trait_bound.rs:28:50
+   |
+28 | fn attention<T: TensorType<InnerType = Params> + AttentionTensorTrait>(
+   |                                                  ^^^^^^^^^^^^^^^^^^^^ required by this bound in `attention`

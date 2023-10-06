@@ -1,4 +1,4 @@
-use tensor_types::{parameter_type, tensor_type};
+use tensor_types::{parameter_type, tensor_type, TensorType};
 
 parameter_type!(BatchSize, i64);
 parameter_type!(SequenceLength, i64);

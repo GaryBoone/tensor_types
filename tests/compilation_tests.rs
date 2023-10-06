@@ -12,4 +12,5 @@ fn compilation_tests() {
     t.compile_fail("tests/compilation_tests/04_fail_into_inner.rs");
     t.compile_fail("tests/compilation_tests/05_fail_missing_into.rs");
     t.compile_fail("tests/compilation_tests/06_fail_name_reuse.rs");
+    t.compile_fail("tests/compilation_tests/07_fail_bad_trait_bound.rs");
 }

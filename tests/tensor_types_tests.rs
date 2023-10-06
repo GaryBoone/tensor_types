@@ -2,7 +2,7 @@
 mod tests {
     use anyhow::Result;
     use tch::{Device, Kind, Tensor};
-    use tensor_types::{parameter_type, tensor_type, TensorTypeError};
+    use tensor_types::{parameter_type, tensor_type, TensorType, TensorTypeError};
 
     // This test shows the basic, correct usage of the parameter_type and tensor_type macros.
     #[test]
@@ -234,5 +234,59 @@ mod tests {
             }
             _ => panic!("expected ShapeMismatch"),
         };
+    }
+
+    #[test]
+    fn test_trait_bounds() {
+        pub trait AttentionTensorTrait {}
+        tensor_type!(
+            BatchSeqDModelTensor,
+            [batch_size, sequence_length, d_model],
+            Params,
+            Kind::Float
+        );
+        tensor_type!(
+            BatchSeqDReducedTensor,
+            [batch_size, sequence_length, d_reduced],
+            Params,
+            Kind::Float
+        );
+
+        // Attach the AttentionTensorTrait to our types.
+        impl AttentionTensorTrait for BatchSeqDModelTensor {}
+        impl AttentionTensorTrait for BatchSeqDReducedTensor {}
+
+        parameter_type!(BatchSize, i64);
+        parameter_type!(SequenceLength, i64);
+        parameter_type!(DModel, i64);
+        parameter_type!(DReduced, i64);
+        pub struct Params {
+            batch_size: BatchSize,
+            sequence_length: SequenceLength,
+            d_model: DModel,
+            d_reduced: DReduced,
+        }
+        let params = Params {
+            batch_size: BatchSize(1),
+            sequence_length: SequenceLength(2),
+            d_model: DModel(3),
+            d_reduced: DReduced(4),
+        };
+
+        fn attention<T: TensorType<InnerType = Params> + AttentionTensorTrait>(
+            query: &T,
+            params: &Params,
+        ) -> Result<T, TensorTypeError> {
+            // ... do something with the tensors ...
+            query.apply_fn(|t| t.triu(1), params)
+        }
+
+        let t = Tensor::randn([1, 2, 3], (Kind::Float, Device::Cpu));
+        let query = BatchSeqDModelTensor::new(t, &params).unwrap();
+        let _ = attention(&query, &params).unwrap();
+
+        let t = Tensor::randn([1, 2, 4], (Kind::Float, Device::Cpu));
+        let query = BatchSeqDReducedTensor::new(t, &params).unwrap();
+        let _ = attention(&query, &params).unwrap();
     }
 }

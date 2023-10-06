@@ -226,11 +226,101 @@ this:
     ...
 ```
 
+## Extending the Type
+It's easy to add functionality to the types created with the `tensor_types!` macro. 
+For example, here is an example type extended to to include directly adding two TensorTypes.
+```rust
+// BatchSeqDModelTensor: Embedding converts each token to a vector of size
+// d_model. They are embedded in an floating point space, so are now kind Float.
+tensor_type!(
+    BatchSeqDModelTensor,
+    [batch_size, sequence_length, d_model],
+    ModelParams,
+    Kind::Float
+);
+impl BatchSeqDModelTensor {
+    pub fn add(&self, t2: &Self, params: &crate::ModelParams) -> Result<Self> {
+        use tensor_types::TensorType;
+        Ok(Self::new(&self.tensor + &t2.tensor, params)?)
+    }
+}
+```
+`BatchSeqDModelTensor`s can now be added like:
+```rust
+    pub fn forward_t(
+        &self,
+        decoder_input: &BatchSeqDModelTensor,
+        ...
+    ) -> Result<BatchSeqDModelTensor> {
+        let masked_mha_output: BatchSeqDModelTensor = ...
+        let sum = decoder_input.add(&masked_mha_output, &self.params)?;
+```
+
+
+## Traits and Marker Traits
+
+The types created with the `tensor_type!` macro all implement a trait called
+`TensorType`. This trait makes enables Rust trait operations such as polymorphic
+arrays and function arguments. Wait! Doesn't that exactly defeat the purpose of
+the `tensor_types` crate, which is to make different types unique? Well, yes, if
+used directly. Instead, the purpose of the trait is to allow some limited
+polymorphism where appropriate. 
+
+For example, perhaps you've added a Local Attention layer that reduces the
+dimensionality of your embedded training examples. Now you want the next layer,
+a Dense Attention layer, to operate on either the reduced dimension
+`BatchSeqDReducedTensor` examples or the full dimension `BatchSeqDModelTensor`
+examples. We need a function that can accept either of these, but we don't want
+to allow any tensor type or any tch::Tensor. Doing so would effectively remove
+size checking.
+
+What we can do is use Rust's Trait Bounds to limit the allowed `TensorTypes`
+passed into the function. It's easy. First, define a marker trait and attach it
+to the types.
+
+```rust
+// AttentionTensorTrait is a marker trait used to limit what can be passed into
+// the Attention function.
+pub trait AttentionTensorTrait {}
+
+// BatchSeqDReducedTensor are reduced dimensionality tensors produced by the
+// Local Attention layer.
+tensor_type!(
+    BatchSeqDReducedTensor,
+    [batch_size, sequence_length, d_reduced],
+    ModelParams,
+    Kind::Float
+);
+
+// Attach the AttentionTensorTrait to our types.
+impl AttentionTensorTrait for BatchSeqDModelTensor {}
+impl AttentionTensorTrait for BatchSeqDReducedTensor {}
+```
+Now our function can be defined to only accept these TensorTypes, and not
+others.
+```rust
+    fn attention<T: TensorType<InnerType = Params> + AttentionTensorTrait>(
+        query: &T,
+        params: &Params,
+    ) -> Result<T, TensorTypeError> {
+        // Do the attention calculation. [Here, just a tch::Tensor upper 
+        // triangle fn, returned directly.]
+        query.apply_fn(|t| t.triu(1), params)
+    }
+```
+So our function is defined with a generic argument on TensorType, bringing in
+the TensorType methods, and further constrained with the trait bound,
+AttentionTensorTrait. Note that `<InnerType = Params>` is how we tell the Rust
+compiler about the type we use to provide the tensor type's runtime dimension
+values.
+
+
 ## Design and Alternatives Considered
 
 The design of the `tensor_type!` macro was motivated by simplicity and
 flexibility. The current version has the format 
-```
+
+```rust
     tensor_type!(<name>, <list of fields>, <struct with those fields>, <kind>);
 ```
 
@@ -239,44 +329,124 @@ that it can be given to the tensor type's `new()` and other functions that check
 the wrapped tensor's dimensions. The parameter instance should be immutable to
 ensure consistency in tensor type dimensions over their lifetimes.
 
-This design makes testing easy however, as test parameter structs can easily be
+This design makes testing easy because test parameter structs can easily be
 created and passed into test code as needed. 
 
-An alternative design fixed dimensions with a `set()` command. The setup was
-like:
+### Alternative Design: Fixed Dimensions
+An alternative design fixed dimensions as part of the type. That is, the macro
+call was like :
 
-```
+```rust
     tensor_type!(<name>, <list of types>, <kind>);
 ```
 
-In this version, the macro accepted a list of types that defined the parameters.
-The `set()` command instantiated their values at runtime. So the setup was like:
-```
+The type was created by the macro with the specified dimensions, as it is
+currently. However, this version then required a `set()` command to initialize
+the runtime values of the dimensions. Once set, the sizes were fixed for the
+type. So the setup was like:
+```rust
     tensor_type!(DecoderInputType, [BatchSize, SequenceLength, ModelDim], Kind::Float);
     DecoderInputType::set(BatchSize(1), SequenceLength(100), ModelDim(256));
+    let my_tensor = DecoderInputType::new(t); // For some tch::Tensor t.
 ```
-This syntax was slightly more concise, but meant that the tensors needed
-internal memory to hold the dimensions. It was implemented with module `static`
-variables and `std::sync::Once` so that once set, the dimensions were fixed,
-preventing changes as is the goal of the `tensor_types` crate. Due to complexity
-of its implementation, `proc_macros` were required, increasing the complexity of
+This syntax was slightly more concise, and meant that in addition to how many
+dimensions were specified, the values of those dimensions were part of the type.
+An advantage of this design is that the runtime dimension values do not need to
+be passed to the type's `new()` function or other functions that check the
+dimensions. 
+
+However, this design is too restrictive.It meant that the tensors needed
+internal memory to hold the dimensions given by the `set()` function. It was
+implemented with module `static` variables to avoid name collisions and
+`std::sync::Once` so that once set, the dimensions were fixed, preventing
+changes as is the goal of the `tensor_types` crate. Due to complexity of its
+implementation, `proc_macros` were required, increasing the complexity of
 testing and packaging by requiring sub-crates. And `Crates.io` doesn't recognize
 subcrates, instead treating them as separate crates.
 
-While more concise, this design made testing difficult because Rust tests are
-run in parallel, meaning that the first test to run defined the shapes of a
-given tensor type. Allowing `set()` to be called repeatedly solved that problem,
-but meant that the tensor types had to be protected from mid-test changes due to
-thread interleaving as tests ran concurrently. 
+While more concise, the largest disadvantage of this design is that it made
+testing quite difficult. In testing, tensor shapes of different sizes are
+typically used to exercise a function. For example, a function may be defined
+like:
 
-Another design considered built the tensor shapes into the macro code. In this
-version, no runtime memory is used. A call like:
-
+```rust
+    pub fn embed(t: BatchTokens) -> Result<BatchTokenEmbed, Error> {
 ```
+`BatchTokens` would be `set()` at program start to be [BatchSize,
+SequenceLength] and remain that size throughout the program's lifetime. However,
+the tests for `embed()` would need to be run with different shapes. But because
+Rust tests are run in parallel, the first test to run would define the shape of
+`BatchTokens`. That would cause all other `set()` calls to fail because it can
+only be called once. Allowing `set()` to be called repeatedly solved that
+problem, but 1) defeated the purpose of using set to fix the dimensions, and 2)
+meant that the tensor types had to be protected from mid-test changes due to
+thread interleaving as tests ran concurrently. Due to this increased complexity,
+this approach was abandoned.
+
+### Alternative Design: Traits
+In the current design the `tensor_type!` macro is called with the fields of a
+struct that define the runtime values of expected tensor dimensions and the type
+of a struct that will provide those fields.
+
+```rust
+    tensor_type!(<name>, <list of fields>, <struct with those fields>, <kind>);
+```
+
+Another approach considered was to use traits to define the runtime values of
+expected tensor dimensions. For example, the macro call might be:
+```rust
+    tensor_type!(<name>, <list of getters>, <trait with those getters>, <kind>);
+```
+So an example might be:
+```rust
+    tensor_type!(BatchSeqType, [get_sequence_length, get_model_dim], ParamsTrait, Kind::int64);
+
+    // Define the Parameters trait.
+    pub trait ParamsTrait {
+        sequence_length: i64,
+        model_dim: i64
+    }
+
+    // Define the Params struct.
+    pub struct Params {
+        sequence_length: i64,
+        model_dim: i64
+    }
+
+    // Implement the trait for the Params struct.
+    impl ParamsTrait for Params {
+        fn get_sequence_length(&self) -> i64 {
+            self.sequence_length
+        }
+        fn get_model_dim(&self) -> i64 {
+            self.model_dim
+        }
+    }
+
+    // At runtime, set the required dimensions for the typed parameters.
+    let params = Params {
+        sequence_length: 100, 
+        model_dim: 250};
+
+    let t0 = Tensor::randn([1, 100, 256], (tch::Kind::Float, tch::Device::Cpu));
+    let decoder_input = DecoderInputType::new(t0, &params)?;
+```
+As can be seen, this approach adds quite a bit of boilerplate code to the type
+definition just to provide the dimensions. An advantage may be the encapsulation
+provided by the trait. However, the macro call to create the new type is
+essentially the same as the current design, as are the functions on the new
+type. So the advantage of this approach is is outweighed by the burden of
+maintaining the trait and the boilerplate code.
+
+### Alternative Design: Coded Dimensions
+For completeness, another design considered built the tensor shapes into the
+macro code. In this version, no runtime memory is used. A call like:
+
+```rust
     tensor_type!(<name>, value1, value2, value3, ..., <kind>);
 ```
 ...can be expanded by the macro system into code essentially like:
-```
+```rust
    let expected_size = vec![value1, value2, value3, ...];
    if tensor.size != expected_size {
      return Error...
@@ -284,10 +454,10 @@ version, no runtime memory is used. A call like:
    ...
 ``` 
 So the code itself stores the values. However, this design also locks the sizes
-into the tensor type too much, making testing difficult. For example, as above,
-once a tensor type is defined, it can't be changed during testing. Specifically,
-the types of function arguments must be known at compile time. If defined as
-above, such functions could not be tested with other tensor sizes.
+into the tensor type too much. Specifically, the values of function arguments
+must be known at compile time. In addition to eliminating runtime configuration,
+it makes testing difficult. For example, as above, once a tensor type is
+defined, it can't be changed during testing.
 
 ## Learn More
 

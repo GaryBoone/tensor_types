@@ -1,6 +1,6 @@
 use anyhow::Result;
 use tch::{Device, Kind, Tensor};
-use tensor_types::{parameter_type, tensor_type};
+use tensor_types::{parameter_type, tensor_type, TensorType};
 
 // This example illustrates how tensor_types crate helps you avoid easy-to-make, hard-to-find bugs.
 // In this example, we'll create and run a transformer function that takes a batch of encoder inputs

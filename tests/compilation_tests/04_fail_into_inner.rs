@@ -1,4 +1,4 @@
-use tensor_types::tensor_type;
+use tensor_types::{tensor_type, TensorType};
 
 pub struct Params {
     my_param1: i64,

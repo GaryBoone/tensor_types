@@ -1,13 +1,31 @@
+pub trait TensorType {
+    type InnerType;
+    fn new(tensor: tch::Tensor, params: &Self::InnerType) -> Result<Self, crate::TensorTypeError>
+    where
+        Self: Sized;
+    fn tensor(&self) -> &tch::Tensor;
+    fn tensor_mut(&mut self) -> &mut tch::Tensor;
+    fn apply_fn<F>(&self, tfn: F, params: &Self::InnerType) -> Result<Self, crate::TensorTypeError>
+    where
+        F: FnOnce(&tch::Tensor) -> tch::Tensor,
+        Self: Sized;
+    fn clone(&self, params: &Self::InnerType) -> Result<Self, crate::TensorTypeError>
+    where
+        Self: Sized;
+    fn into_inner(self) -> tch::Tensor;
+}
+
 #[macro_export]
 macro_rules! tensor_type {
 
-    ($name:ident, [$($field:ident),*],  $params:ty, $kind:expr) => {
+    ($name:ident, [$($field:ident),*], $params:ty, $kind:expr) => {
 
         pub struct $name {
             pub tensor: tch::Tensor,
         }
 
-        impl $name {
+        impl $crate::TensorType for $name {
+            type InnerType = $params;
 
             /// The new() function creates a new wrapper for a tensor. Its input is a tensor
             /// that will be checked for the required shape and a a parameters instance that
@@ -34,7 +52,7 @@ macro_rules! tensor_type {
             /// assert_eq!(wrapper.tensor().size(), &[2, 3]);
             /// assert_eq!((*wrapper).size(), &[2, 3]);
             /// ```
-            pub fn new(tensor: tch::Tensor, params: &$params) -> Result<Self, $crate::TensorTypeError> {
+            fn new(tensor: tch::Tensor, params: &$params) -> Result<Self, $crate::TensorTypeError> {
                 let tensor_size = tensor.size();
                 let expected_size: Vec<i64> = vec![$(params.$field.into()),*];
 
@@ -57,10 +75,10 @@ macro_rules! tensor_type {
             }
 
             /// The tensor() function returns a reference to the wrapped tensor.
-            pub fn tensor(&self) -> &tch::Tensor { &self.tensor }
+            fn tensor(&self) -> &tch::Tensor { &self.tensor }
 
             /// The tensor_mut() function returns a mutable reference to the wrapped tensor.
-            pub fn tensor_mut(&mut self) -> &mut tch::Tensor { &mut self.tensor }
+            fn tensor_mut(&mut self) -> &mut tch::Tensor { &mut self.tensor }
 
 
             /// The apply_fn() function will apply a given function to the current value held by the
@@ -68,7 +86,7 @@ macro_rules! tensor_type {
             /// closure that operates on a tch::Tensor and returns a tch::Tensor.
             /// Example:
             ///   let newAB_x2 = newAB.apply_fn(|t: &Tensor| t * 2, &params)?;
-            pub fn apply_fn<F>(&self, tfn: F, params: &$params) -> Result<Self, $crate::TensorTypeError>
+            fn apply_fn<F>(&self, tfn: F, params: &$params) -> Result<Self, $crate::TensorTypeError>
             where
                 F: FnOnce(&tch::Tensor) -> tch::Tensor,
             {
@@ -80,12 +98,12 @@ macro_rules! tensor_type {
             /// This is potentially confusing because tensor.clone() returns a deep clone.
             /// However, the newtype is a wrapper around a tensor, so cloning the newtype should
             /// clone the wrapper, not the data.
-            pub fn clone(&self, params: &$params) -> Result<Self, $crate::TensorTypeError> {
+            fn clone(&self, params: &$params) -> Result<Self, $crate::TensorTypeError> {
                 Self::new(self.tensor.shallow_clone(), params)
             }
 
             /// Unwrap the underlying tch::Tensor.
-            pub fn into_inner(self) -> tch::Tensor {
+            fn into_inner(self) -> tch::Tensor {
                 self.tensor
             }
         }

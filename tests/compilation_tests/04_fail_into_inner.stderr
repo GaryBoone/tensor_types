@@ -10,9 +10,8 @@ error[E0382]: borrow of moved value: `my_tensor`
 20 |     println!("{:?}", &my_tensor);
    |                      ^^^^^^^^^^ value borrowed here after move
    |
-note: `MyTensor::into_inner` takes ownership of the receiver `self`, which moves `my_tensor`
-  --> tests/compilation_tests/04_fail_into_inner.rs:7:1
+note: `into_inner` takes ownership of the receiver `self`, which moves `my_tensor`
+  --> src/tensor_types.rs
    |
-7  | tensor_type!(MyTensor, [my_param1, my_param2], Params, tch::Kind::Double);
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   = note: this error originates in the macro `tensor_type` (in Nightly builds, run with -Z macro-backtrace for more info)
+   |     fn into_inner(self) -> tch::Tensor;
+   |                   ^^^^

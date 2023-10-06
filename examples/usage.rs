@@ -1,6 +1,6 @@
 use anyhow::Error;
 use tch::{Device, Kind, Tensor};
-use tensor_types::{parameter_type, tensor_type, TensorTypeError};
+use tensor_types::{parameter_type, tensor_type, TensorType, TensorTypeError};
 
 // Shows the basic operations for creating and using TensorTypes.
 fn basic_workflow() -> Result<(), Error> {

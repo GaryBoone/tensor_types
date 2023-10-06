@@ -15,7 +15,7 @@
 //! #    size2: i64,
 //! #    size3: i64,
 //! # }
-//!     use tensor_types::tensor_type;
+//!     use tensor_types::{tensor_type, TensorType};
 //!
 //!     tensor_type!(MyTensor, [size1, size2, size3], Params, tch::Kind::Float);
 //! ```
@@ -23,7 +23,7 @@
 //! size3]` is a list of the fields in the `Params` type that gives the sizes of your tensor, and
 //! `tch::Kind::Float` is the kind of the tensor.
 //!
-//! 2. The `Params` type can be defined however you like, so long as it provides the required
+//! 2. The `Params` struct can be defined however you like, so long as it provides the required
 //! fields. So for example
 //! ```rust
 //!    pub struct Params {
@@ -79,7 +79,7 @@
 //!    be checked by the new() method.
 //!
 //! ```rust
-//! # use tensor_types::{parameter_type, tensor_type};
+//! # use tensor_types::{parameter_type, tensor_type, TensorType};
 //! # parameter_type!(BatchSize, i64);
 //! # parameter_type!(SequenceLength, i64);
 //! # parameter_type!(ModelDimension, i64);
@@ -113,6 +113,7 @@
 //! # Ok(())
 //! # }
 
+pub use tensor_types::TensorType;
 pub use tensor_types::TensorTypeError;
 
 mod parameter_types;
