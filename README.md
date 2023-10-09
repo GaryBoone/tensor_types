@@ -1,7 +1,10 @@
 # tensor_types
 
-The tensor_types crate provides strong typing and size-checking to the tensors in
+The `tensor_types` crate provides strong typing and size-checking to the tensors in
 PyTorch Rust frameworks, preventing a large class of hard-to-find bugs. 
+
+The `tensor_types` crate has been tested with
+[tch-rs](https://github.com/LaurentMazare/tch-rs) versions 0.13.0 and 0.14.0.
 
 ## Introduction
 
