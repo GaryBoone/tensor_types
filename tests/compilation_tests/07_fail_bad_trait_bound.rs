@@ -47,7 +47,7 @@ fn main() {
 
     let t = Tensor::randn([1, 2, 4], (Kind::Float, Device::Cpu));
     let query = BatchSeqDReducedTensor::new(t, &params).unwrap();
-    // This line will fail to compile because BatchSeqDReducedTensor doesn't
-    // implement AttentionTensorTrait.
+    // This line will fail to compile because BatchSeqDReducedTensor doesn't implement
+    // AttentionTensorTrait.
     let _ = attention(&query, &params).unwrap();
 }

@@ -58,7 +58,7 @@ produces wrong results. The `tensor_types` crate allows code like the following:
     let tokenized = TokenizedInput::new(input, &params)?; // Wrap, checking shape.
     // Embed, confirming the new shape and kind. Here, embed() accepts
     // TokenizedInput and returns a tch::Tensor.
-    let embedded = EmbeddedInput::new(embed(tokenized)?, , &params)?; 
+    let embedded = EmbeddedInput::new(embed(tokenized)?, &params)?; 
     // More effectively, you would define embed() to accept a TokenizedInput
     // and return an EmbeddedInput, so the your code would read like:
     // let embedded = embed(tokenized, &params)?; 
