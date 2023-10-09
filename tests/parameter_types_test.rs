@@ -36,20 +36,15 @@ mod tests {
         assert_eq!(format!("{:?}", value), "TestParamType(42)");
     }
 
-    #[cfg(feature = "use_serde")]
-    mod serde_tests {
-        use super::TestParamType;
+    #[test]
+    fn test_serde_serialize() {
+        let value = TestParamType::from(42);
+        assert_eq!(serde_json::to_string(&value).unwrap(), "42");
+    }
 
-        #[test]
-        fn test_serde_serialize() {
-            let value = TestParamType::from(42);
-            assert_eq!(serde_json::to_string(&value).unwrap(), "42");
-        }
-
-        #[test]
-        fn test_serde_deserialize() {
-            let value: TestParamType = serde_json::from_str("42").unwrap();
-            assert_eq!(*value, 42);
-        }
+    #[test]
+    fn test_serde_deserialize() {
+        let value: TestParamType = serde_json::from_str("42").unwrap();
+        assert_eq!(*value, 42);
     }
 }

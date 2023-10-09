@@ -1,9 +1,7 @@
 /// The parameter_type! macro defines a new named type with a specific inner type.
 ///
 /// This macro generates a new struct type with the specified name and inner type, along with
-/// implementations for various traits such as accessors and display. This macro also conditionally
-/// derives `serde::Serialize` and `serde::Deserialize` if the compilation feature `use_serde` is
-/// enabled.
+/// implementations for various traits such as accessors and display.
 ///
 /// # Arguments
 ///
